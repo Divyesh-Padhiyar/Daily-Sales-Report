@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Sales Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 1000px;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .btn-container {
+            text-align: center;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background-color: #45a049;
+        }
+
+        .icon-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 20px;
+            line-height: 20px;
+            margin-left: 5px;
+        }
+
+        .icon-button:hover {
+            background-color: #0056b3;
+        }
+
+        .remove-row-button {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .remove-row-button:hover {
+            background-color: #c82333;
+        }
+
+        .add-row-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 10px;
+            margin-right: 30px;
+        }
+
+        .result-table {
+            margin-top: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Daily Sales Report</h2>
+        <div class="add-row-container">
+            <button class="icon-button" onclick="addRow()">+</button>
+        </div>
+        <form id="entryForm" onsubmit="displayEntries(event)">
+            <table id="data-table">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Name</th>
+                        <th>Yesterday's Achievements</th>
+                        <th>Today's Planning</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><input type="text" placeholder="1"></td>
+                        <td><input type="text" placeholder="John Doe"></td>
+                        <td><input type="text" placeholder="Completed project report"></td>
+                        <td><input type="text" placeholder="Research and data analysis"></td>
+                        <td><button type="button" class="icon-button remove-row-button" onclick="removeRow(this)">-</button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="btn-container">
+                <button type="submit" class="btn">Submit</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Display Table -->
+    <div class="container hidden" id="resultContainer">
+        <h2>Entered Entries</h2>
+        <table id="result-table" class="result-table">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Name</th>
+                    <th>Yesterday's Achievements</th>
+                    <th>Today's Planning</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Dynamic rows will be added here -->
+            </tbody>
+        </table>
+        <!-- Button to Export to Excel -->
+        <div class="btn-container">
+            <button class="btn" onclick="exportToExcel()">Export to Excel</button>
+        </div>
+    </div>
+
+    <!-- Include SheetJS Library for Excel Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script>
+        function addRow() {
+            const tableBody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+            const newRow = document.createElement('tr');
+            const rowNumber = tableBody.rows.length + 1;
+
+            newRow.innerHTML = `
+                <td><input type="text" placeholder="${rowNumber}"></td>
+                <td><input type="text" placeholder="Name"></td>
+                <td><input type="text" placeholder="Yesterday's Achievements"></td>
+                <td><input type="text" placeholder="Today's Planning"></td>
+                <td><button type="button" class="icon-button remove-row-button" onclick="removeRow(this)">-</button></td>
+            `;
+
+            tableBody.appendChild(newRow);
+        }
+
+        function removeRow(button) {
+            const row = button.parentElement.parentElement;
+            row.remove();
+            updateRowNumbers();
+        }
+
+        function updateRowNumbers() {
+            const rows = document.querySelectorAll('#data-table tbody tr');
+            rows.forEach((row, index) => {
+                row.cells[0].querySelector('input').placeholder = index + 1;
+            });
+        }
+
+        async function displayEntries(event) {
+            event.preventDefault();
+
+            const resultContainer = document.getElementById('resultContainer');
+            const resultTableBody = document.getElementById('result-table').getElementsByTagName('tbody')[0];
+            resultTableBody.innerHTML = '';
+
+            const rows = document.querySelectorAll('#data-table tbody tr');
+            rows.forEach(async (row, index) => {
+                const rowData = Array.from(row.getElementsByTagName('input')).map(input => input.value);
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${rowData[1]}</td>
+                    <td>${rowData[2]}</td>
+                    <td>${rowData[3]}</td>
+                `;
+                resultTableBody.appendChild(newRow);
+
+                // Send data to the server to add to Excel
+                await fetch('http://localhost:3000/add-entry', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ No: index + 1, Name: rowData[1], Yesterday: rowData[2], Today: rowData[3] })
+                });
+            });
+
+            resultContainer.classList.remove('hidden');
+
+            // Fetch and display updated data from the server
+            fetchDataFromServer();
+        }
+
+        async function fetchDataFromServer() {
+            const response = await fetch('http://localhost:3000/data');
+            const data = await response.json();
+            const resultTableBody = document.getElementById('result-table').getElementsByTagName('tbody')[0];
+            resultTableBody.innerHTML = ''; // Clear existing rows
+
+            data.forEach((row, index) => {
+                const newRow = document.createElement('tr');
+                newRow.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${row.Name}</td>
+                    <td>${row.Yesterday}</td>
+                    <td>${row.Today}</td>
+                `;
+                resultTableBody.appendChild(newRow);
+            });
+        }
+
+        async function exportToExcel() {
+    try {
+        // Fetch the Excel file from the server
+        const response = await fetch('http://localhost:3000/export-to-excel');
+        if (!response.ok) {
+            throw new Error('Failed to export data to Excel');
+        }
+
+        // Convert the response to a blob
+        const blob = await response.blob();
+        
+        // Create a link element for downloading the file
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = 'Entries.xlsx';
+        document.body.appendChild(link);
+        
+        // Programmatically click the link to trigger the download
+        link.click();
+        
+        // Clean up by removing the link element
+        document.body.removeChild(link);
+    } catch (error) {
+        console.error('Error exporting to Excel:', error);
+    }
+}
+
+    </script>
+
+</body>
+</html>
