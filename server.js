@@ -1,9 +1,8 @@
-// server.js
-
 const express = require('express');
 const cors = require('cors');
 const xlsx = require('xlsx');
 const fs = require('fs');
+const path = require('path');
 
 const app = express();
 const PORT = 3000;
@@ -27,23 +26,31 @@ app.get('/data', (req, res) => {
 
 // Endpoint to export data to Excel
 app.get('/export-to-excel', (req, res) => {
-    // Create a new workbook and add the entries data
-    const wb = xlsx.utils.book_new();
-    const ws = xlsx.utils.json_to_sheet(entries);
-    xlsx.utils.book_append_sheet(wb, ws, 'Entries');
+    try {
+        // Create a new workbook and add the entries data
+        const wb = xlsx.utils.book_new();
+        const ws = xlsx.utils.json_to_sheet(entries);
+        xlsx.utils.book_append_sheet(wb, ws, 'Entries');
 
-    // Write workbook to a file
-    const filePath = 'Entries.xlsx';
-    xlsx.writeFile(wb, filePath);
+        // Write workbook to a file
+        const filePath = path.join(__dirname, 'Entries.xlsx');
+        xlsx.writeFile(wb, filePath);
 
-    // Read the file and send it as a response
-    res.download(filePath, (err) => {
-        if (err) {
-            console.error('Error downloading the file:', err);
-        }
-        // Delete the file after sending it
-        fs.unlinkSync(filePath);
-    });
+        // Read the file and send it as a response
+        res.download(filePath, (err) => {
+            if (err) {
+                console.error('Error downloading the file:', err);
+                res.status(500).send('Error downloading the file');
+            }
+            // Delete the file after sending it
+            fs.unlink(filePath, (err) => {
+                if (err) console.error('Error deleting the file:', err);
+            });
+        });
+    } catch (error) {
+        console.error('Error exporting to Excel:', error);
+        res.status(500).send('Error exporting to Excel');
+    }
 });
 
 // Start the server
